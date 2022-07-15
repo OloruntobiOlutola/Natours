@@ -1,104 +1,91 @@
-const fs = require('fs');
+const Tour = require('./../models/tour-model');
 
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
-);
-
-exports.checkId = (req, res, next, val) => {
-  const tour = tours.find((tour) => tour.id === val * 1);
-  if (!tour) {
-    return res.status(400).json({
-      status: 'bad request',
-      messege: `tour with id of ${val} does not exist`,
+exports.getAllTour = async (req, res) => {
+  try {
+    const tours = await Tour.find();
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+        tours,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'Failed',
+      message: error,
     });
   }
-  next();
 };
 
-exports.checkBody = (req, res, next) => {
-  const { name, price, description } = req.body;
-  console.log(name, price, description);
-  if (!price || !name || !description) {
-    return res.status(400).json({
-      status: 'bad request',
-      messege: `include the necessary details`,
+exports.getTour = async (req, res) => {
+  try {
+    const tour = await Tour.findById(req.params.id);
+    res.status(200).json({
+      status: 'success',
+      data: {
+        tour,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'Failed',
+      message: error,
     });
   }
-  next();
 };
 
-exports.getAllTour = (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    results: tours.length,
-    data: {
-      tours,
-    },
-  });
+exports.createTour = async (req, res) => {
+  try {
+    const newTour = await Tour.create(req.body);
+
+    res.status(201).json({
+      status: 'created',
+      data: {
+        tour: newTour,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'Failed',
+      message: error,
+    });
+  }
 };
 
-exports.getTour = (req, res) => {
-  const tour = tours.find((tour) => tour.id === req.params.id * 1);
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour,
-    },
-  });
+exports.updateTour = async (req, res) => {
+  try {
+    const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    res.status(201).json({
+      status: 'updated',
+      data: {
+        tour: updatedTour,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'Failed',
+      message: error,
+    });
+  }
 };
 
-exports.createTour = (req, res) => {
-  const newTour = Object.assign({ id: tours.length }, req.body);
-  tours.push(newTour);
-  fs.writeFile(
-    `${__dirname}/../dev-data/data/tours-simple.json`,
-    JSON.stringify(tours),
-    (err) => {
-      if (err) return console.log(err);
-    }
-  );
-  res.status(201).json({
-    status: 'created',
-    data: {
-      tour: newTour,
-    },
-  });
-};
-
-exports.updateTour = (req, res) => {
-  const id = Number(req.params.id);
-  const tour = tours.find((tour) => tour.id === id);
-  const filteredTour = tours.filter((tour) => tour.id !== id);
-  const updatedTour = req.body;
-  const newTour = Object.assign(tour, updatedTour);
-  filteredTour.push(newTour);
-  fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
-    JSON.stringify(filteredTour),
-    (err) => {
-      if (err) return console.log(err);
-    }
-  );
-  res.status(201).json({
-    status: 'updated',
-    data: {
-      tour: newTour,
-    },
-  });
-};
-
-exports.deleteTour = (req, res) => {
-  const id = Number(req.params.id);
-  const filteredTour = tours.filter((tour) => tour.id !== id);
-  fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
-    JSON.stringify(filteredTour),
-    (err) => {
-      if (err) return console.log(err);
-    }
-  );
-  res.status(204).json({
-    status: 'deleted',
-    data: null,
-  });
+exports.deleteTour = async (req, res) => {
+  try {
+    await Tour.findByIdAndDelete(req.params.id, {
+      strict: true,
+    });
+    res.status(204).json({
+      status: 'deleted',
+      data: null,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: 'Failed',
+      message: error,
+    });
+  }
 };
