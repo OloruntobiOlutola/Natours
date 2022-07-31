@@ -34,7 +34,7 @@ class APIFeatures {
 
   filter() {
     const queryObj = { ...this.queryString };
-    exclude = ['page', 'limit', 'fields', 'sort'];
+    const exclude = ['page', 'limit', 'fields', 'sort'];
     exclude.forEach((element) => delete queryObj[element]);
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
