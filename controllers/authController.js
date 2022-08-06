@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { promisify } = require('util');
 const User = require('../models/user-model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
@@ -17,6 +18,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     photo: req.body.photo,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    roles: req.body.roles,
   });
 
   const token = await signToken(newUser._id);
@@ -52,7 +54,6 @@ exports.logIn = catchAsync(async (req, res, next) => {
 
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
-  console.log(req.headers);
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
@@ -62,6 +63,39 @@ exports.protect = catchAsync(async (req, res, next) => {
   if (!token) {
     return next(new AppError('You are not logged in. Kindly log in.', 401));
   }
-  console.log(token);
+
+  const decodedToken = await jwt.verify(token, process.env.JWT_SECRET);
+
+  const currentUser = await User.findById(decodedToken.id);
+
+  if (currentUser.changePasswordAfter(decodedToken.iat))
+    return next(new AppError('Kindly log in again.', 401));
+
+  req.user = currentUser;
   next();
+});
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.roles)) {
+      return next(
+        new AppError('You are not authorised to perform this action.', 403)
+      );
+    }
+    next();
+  };
+};
+
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+  // 1. Get User based on posted email
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    return next(
+      new AppError('There is no user with the provided email address', 404)
+    );
+  }
+  // 2. Generate random reset token
+  const resetToken = user.createPasswordResetToken();
+  user.save({validateBeforeSave: false})
+  // 3. Send token to the email addess
 });

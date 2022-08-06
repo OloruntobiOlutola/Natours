@@ -5,6 +5,8 @@ const handleCastError = (err) => {
   return new AppError(message, 400);
 };
 
+const handleWebTokenError = (err) => new AppError(err.message, 401);
+
 const devError = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -39,6 +41,7 @@ module.exports = (err, req, res, next) => {
   } else if (process.env.NODE_ENV == 'production') {
     let error = { ...err };
     if (error.name === 'CastError') error = handleCastError(error);
+    if (error.name === 'JsonWebTokenError') error = handleWebTokenError(error);
     prodError(error, res);
   }
   next();

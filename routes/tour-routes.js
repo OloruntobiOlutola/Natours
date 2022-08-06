@@ -15,11 +15,15 @@ const {
   getTourByMonth,
 } = tourControllers;
 
-const { protect } = authController;
+const { protect, restrictTo } = authController;
 router.route('/top-5-tours').get(aliasing, getAllTour);
 router.route('/monthly-tour/:year').get(getTourByMonth);
 router.route('/tours-stats').get(getToursStats);
 router.route('/').get(protect, getAllTour).post(createTour);
-router.route('/:id').delete(deleteTour).put(updateTour).get(getTour);
+router
+  .route('/:id')
+  .delete(protect, restrictTo('admin', 'tour-guide'), deleteTour)
+  .put(updateTour)
+  .get(getTour);
 
 module.exports = router;
