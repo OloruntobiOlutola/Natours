@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
-const { promisify } = require('util');
+const crypto = require('crypto');
 const User = require('../models/user-model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const bcrypt = require('bcryptjs');
+const sendEmail = require('../utils/email');
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -46,9 +47,7 @@ exports.logIn = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    data: {
-      token,
-    },
+    token,
   });
 });
 
@@ -96,6 +95,59 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
   // 2. Generate random reset token
   const resetToken = user.createPasswordResetToken();
-  user.save({validateBeforeSave: false})
+  user.save({ validateBeforeSave: false });
+
   // 3. Send token to the email addess
+  const resetUrl = `${req.protocol}://${req.get(
+    'host'
+  )}/api/v1/users/reset-password/${resetToken}`;
+
+  const message = `To reset your password click on the link below to submit your new password: ${resetUrl}`;
+
+  try {
+    await sendEmail({
+      message,
+      email: user.email,
+      subject: "Your password reset url. It's valid for 10mins",
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Token has been sent to your mail',
+    });
+  } catch (err) {
+    (user.passwordResetToken = undefined),
+      (user.passwordTokenExpires = undefined),
+      await user.save({ validateBeforeSave: false });
+    next(new AppError('Error while sending the token to your mail', 500));
+  }
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const hashToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+  const user = await User.findOne({
+    passwordResetToken: hashToken,
+    passwordTokenExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    return next(new AppError('Token is invalid or it has expired', 400));
+  }
+
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordTokenExpires = undefined;
+  user.passwordChangedAt = Date.now() - 1000;
+  await user.save();
+
+  const token = await signToken(user._id);
+
+  res.status(200).json({
+    status: 'success',
+    message: 'password updated',
+    token,
+  });
 });
