@@ -12,6 +12,27 @@ const signToken = (id) => {
   });
 };
 
+const createAndSendToken = async (user, statusCode, res) => {
+  const token = await signToken(user._id);
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  res.cookie('jwt', token, cookieOptions);
+
+  user.password = undefined;
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
 exports.signUp = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     name: req.body.name,
@@ -22,15 +43,7 @@ exports.signUp = catchAsync(async (req, res, next) => {
     roles: req.body.roles,
   });
 
-  const token = await signToken(newUser._id);
-
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  });
+  createAndSendToken(newUser, 201, res);
 });
 
 exports.logIn = catchAsync(async (req, res, next) => {
@@ -43,12 +56,7 @@ exports.logIn = catchAsync(async (req, res, next) => {
   if (!(await bcrypt.compare(password, user.password)) || !user)
     return next(new AppError('Invalid email or password', 401));
 
-  const token = await signToken(user._id);
-
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createAndSendToken(user, 200, res);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -143,31 +151,19 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordChangedAt = Date.now() - 1000;
   await user.save();
 
-  const token = await signToken(user._id);
-
-  res.status(200).json({
-    status: 'success',
-    message: 'password updated',
-    token,
-  });
+  createAndSendToken(user, 200, res);
 });
 
-exports.updatePassword = catchAsync( async (req, res, next) => {
-  const user = await User.findById(req.user.id).select('+password')
-  const {newPassword, newPasswordConfirm} = req.body
-  if (user.password !== req.body.password){
-    return next(new AppError("Your password is incorrect", 401))
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select('+password');
+  const { newPassword, newPasswordConfirm } = req.body;
+  if (!(await bcrypt.compare(req.body.password, user.password))) {
+    return next(new AppError('Your password is incorrect', 401));
   }
 
   user.password = newPassword;
-  user.passwordConfirm = newPasswordConfirm
+  user.passwordConfirm = newPasswordConfirm;
   await user.save();
 
-  const token = await signToken(user._id);
-
-  res.status(200).json({
-    status: 'success',
-    message: 'password updated',
-    token,
-  });
-})
+  createAndSendToken(user, 200, res);
+});

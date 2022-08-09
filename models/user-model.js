@@ -48,6 +48,11 @@ const userSchema = new mongoose.Schema(
     },
     passwordResetToken: String,
     passwordTokenExpires: Date,
+    active: {
+      type: Boolean,
+      default: true,
+      select: false,
+    },
   },
   {
     toJSON: { virtuals: true },
@@ -82,6 +87,11 @@ userSchema.methods.createPasswordResetToken = function () {
   this.passwordTokenExpires = Date.now() + 10 * 60 * 1000;
   return resetToken;
 };
+
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
+  next();
+});
 
 const User = mongoose.model('User', userSchema);
 
