@@ -12,6 +12,25 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.updateMyDetails = catchAsync( async (req, res, next) => {
+  if (req.body.password || req.body.passwordConfirm) {
+    return next(new AppError("You can't change the password using this page", 400))
+  }
+  const {email, name} = req.body
+  const update = {email, name}
+  const updatedUser = await User.findByIdAndUpdate(req.user._id, update, {
+    new: true,
+    runValidators: true
+  })
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      updatedUser
+    }
+  })
+})
+
 exports.getUser = (req, res) => {
   res.status(500).json({
     status: 'error',
