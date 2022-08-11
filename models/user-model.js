@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       select: false,
-    },
+    }
   },
   {
     toJSON: { virtuals: true },
