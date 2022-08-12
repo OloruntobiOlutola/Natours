@@ -25,6 +25,22 @@ const reviewSchema = new mongoose.Schema({
         ref: 'User',
         required: [true, "A review must belong to an author"]
     }
+},
+{
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+)
+
+reviewSchema.pre(/^find/, function(next){
+    this.populate({
+        path: 'tourRef',
+        select: 'name'
+    }).populate({
+        path: 'author',
+        select: 'name photo'
+    })
+    next()
 })
 
 const Review = mongoose.model('Review', reviewSchema)

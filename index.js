@@ -8,6 +8,7 @@ const hpp = require('hpp')
 const rateLimit = require('express-rate-limit')
 const tourRouter = require('./routes/tour-routes');
 const userRouter = require('./routes/user-routes');
+const reviewRouter = require('./routes/review-routes')
 const ErrorHandler = require('./controllers/error-controllers');
 const AppError = require('./utils/AppError');
 
@@ -50,6 +51,7 @@ app.use(express.static(`${__dirname}/public`));
 // Routes
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/reviews', reviewRouter)
 app.all('*', (req, res, next) => {
   const err = new AppError(`http://localhost:3000${req.url} not found`, 404);
   next(err);
