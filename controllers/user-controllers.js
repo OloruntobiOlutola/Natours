@@ -1,5 +1,6 @@
 const User = require('../models/user-model');
 const catchAsync = require('../utils/catchAsync');
+const handlerController = require('./handlerFactory')
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find();
@@ -47,12 +48,7 @@ exports.createUser = (req, res) => {
   });
 };
 
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'not yet written',
-  });
-};
+exports.updateUser = handlerController.updateOne(User)
 
 exports.deleteMe = catchAsync(async (req, res, next) => {
   await User.findByIdAndUpdate(req.user.id, { active: false });
@@ -61,3 +57,5 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
     data: null,
   });
 });
+
+exports.deleteUser = handlerController.deleteOne(User) 

@@ -11,6 +11,7 @@ const {
   resetPassword,
   updatePassword,
   protect,
+  restrictTo
 } = authController;
 const {
   getAllUsers,
@@ -19,6 +20,7 @@ const {
   updateUser,
   deleteMe,
   updateMyDetails,
+  deleteUser
 } = userControllers;
 
 router.post('/signup', signUp);
@@ -30,6 +32,7 @@ router.patch('/upate-details', protect, updateMyDetails);
 router.delete('/delete-me', protect, deleteMe);
 
 router.route('/').get(getAllUsers).post(createUser);
+router.route('/:id').delete(protect, restrictTo('admin'), deleteUser)
 // router.route('/:id').delete(deleteUser).put(updateUser).get(getUser);
 
 module.exports = router;
