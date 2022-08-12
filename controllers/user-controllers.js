@@ -2,16 +2,14 @@ const User = require('../models/user-model');
 const catchAsync = require('../utils/catchAsync');
 const handlerController = require('./handlerFactory')
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
-  res.status(200).json({
-    status: 'success',
-    result: users.length,
-    data: {
-      users,
-    },
-  });
-});
+
+exports.getAllUsers = handlerController.getAll(User)
+
+exports.getUser = handlerController.getOne(User)
+
+exports.deleteUser = handlerController.deleteOne(User)
+
+exports.updateUser = handlerController.updateOne(User)
 
 exports.updateMyDetails = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {
@@ -34,22 +32,6 @@ exports.updateMyDetails = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'not yet written',
-  });
-};
-
-exports.createUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'not yet written',
-  });
-};
-
-exports.updateUser = handlerController.updateOne(User)
-
 exports.deleteMe = catchAsync(async (req, res, next) => {
   await User.findByIdAndUpdate(req.user.id, { active: false });
   res.status(204).json({
@@ -58,4 +40,4 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.deleteUser = handlerController.deleteOne(User) 
+ 

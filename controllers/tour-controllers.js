@@ -11,23 +11,7 @@ exports.aliasing = (req, res, next) => {
   next();
 };
 
-exports.getAllTour = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour.find(), req.query)
-    .sort()
-    .limit()
-    .paginate()
-    .filter();
-
-  const tours = await features.query;
-  res.status(200).json({
-    status: 'Success',
-    results: tours.length,
-    data: {
-      tours,
-    },
-  });
-});
-
+exports.getAllTour = 
 exports.getTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findById(req.params.id).populate({
     path: 'guides',
@@ -46,16 +30,7 @@ exports.getTour = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body);
-
-  res.status(201).json({
-    status: 'created',
-    data: {
-      tour: newTour,
-    },
-  });
-});
+exports.createTour = handlerController.createOne(Tour)
 
 exports.updateTour = handlerController.updateOne(Tour)
 
