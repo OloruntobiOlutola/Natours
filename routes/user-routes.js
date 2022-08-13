@@ -38,6 +38,6 @@ router.get('/me',  getMe, getOne)
 
 router.use(restrictTo('admin'))
 router.route('/').get(  getAllUsers).post(createUser);
-router.route('/:id').delete(  deleteUser).get(  getUser)
+router.route('/:id').delete(  deleteUser).get(getUser)
 
 module.exports = router;
