@@ -64,7 +64,8 @@ exports.deleteOne = Model => catchAsync(async (req, res, next) => {
   });
 
   exports.getAll = Model = catchAsync(async (req, res, next) => {
-    const features = new APIFeatures(Model.find(), req.query)
+    let filter = req.params.tourId ? {tourRef: req.params.tourId} : {}
+    const features = new APIFeatures(Model.find(filter), req.query)
       .sort()
       .limit()
       .paginate()

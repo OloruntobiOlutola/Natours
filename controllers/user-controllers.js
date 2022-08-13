@@ -11,6 +11,11 @@ exports.deleteUser = handlerController.deleteOne(User)
 
 exports.updateUser = handlerController.updateOne(User)
 
+exports.getMe = (req, res, next) => {
+  req.params.id = req.user.id
+  next()
+}
+
 exports.updateMyDetails = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {
     return next(
