@@ -11,7 +11,7 @@ exports.aliasing = (req, res, next) => {
   next();
 };
 
-exports.getAllTour = 
+exports.getAllTour = handlerController.getAll(Tour)
 exports.getTour = catchAsync(async (req, res, next) => {
   const tour = await Tour.findById(req.params.id).populate({
     path: 'guides',

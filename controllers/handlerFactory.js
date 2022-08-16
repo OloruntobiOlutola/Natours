@@ -34,9 +34,6 @@ exports.deleteOne = Model => catchAsync(async (req, res, next) => {
   });
 
   exports.createOne = Model => catchAsync(async (req, res, next) => {
-    if (Model === "Review"){
-      
-    }
     const doc = await Model.create(req.body);
   
     res.status(201).json({
@@ -63,8 +60,8 @@ exports.deleteOne = Model => catchAsync(async (req, res, next) => {
     });
   });
 
-  exports.getAll = Model = catchAsync(async (req, res, next) => {
-    let filter = req.params.tourId ? {tourRef: req.params.tourId} : {}
+  exports.getAll = Model => catchAsync(async (req, res, next) => {
+   let filter = req.params.tourId ? {tourRef: req.params.tourId} : {}
     const features = new APIFeatures(Model.find(filter), req.query)
       .sort()
       .limit()
