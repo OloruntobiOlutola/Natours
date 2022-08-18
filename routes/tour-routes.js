@@ -14,6 +14,7 @@ const {
   aliasing,
   getToursStats,
   getTourByMonth,
+  getTourWithin
 } = tourControllers;
 
 const { protect, restrictTo } = authController;
@@ -21,6 +22,7 @@ const { protect, restrictTo } = authController;
 router.use('/:tourId/reviews', reviewRouter)
 
 router.route('/top-5-tours').get(aliasing, getAllTour);
+router.route('/tour-within/:distance/center/:latlng/unit/:unit').get(getTourWithin)
 router.route('/monthly-tour/:year').get(protect, restrictTo('admin', 'lead-guide'), getTourByMonth);
 router.route('/tours-stats').get(protect, restrictTo('admin', 'lead-guide', 'guide'), getToursStats);
 router.route('/').get(getAllTour).post(protect, restrictTo('admin', 'lead-guide'), createTour);

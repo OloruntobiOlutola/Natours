@@ -118,3 +118,21 @@ exports.getTourByMonth = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.getTourWithin = catchAsync(async(req, res, next) => {
+  const {distance, latlng, unit} = req.params
+  const [lat, lng] = latlng.split(',')
+
+  if (!lat || !lng){
+    return next(new AppError('Provide latitude and longitude in the format lat,lng'))
+  }
+
+  const radius = unit === "km" ? distance / 6731 : distance / 3958.8
+  const tours = await Tour.find({startLocation : {$geoWithin: {$centerSphere: [[lng, lat], radius]}}})
+  console.log(distance, lat, lng, unit);
+  res.status(200).json({
+    status: 'success',
+    result: tours.length,
+    tours
+  })
+})
