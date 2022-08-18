@@ -10,6 +10,7 @@ const reviewSchema = new mongoose.Schema({
         type: Number,
         min: [1, "Rating can't be less than 1."],
         max: [5, "Rating can't be more than 5."],
+        set: val => Math.round(val * 10) /10
     },
     createdAt: {
         type: Date,
@@ -33,16 +34,7 @@ const reviewSchema = new mongoose.Schema({
   }
 )
 
-reviewSchema.pre(/^find/, function(next){
-    this.populate({
-        path: 'tourRef',
-        select: 'name'
-    }).populate({
-        path: 'author',
-        select: 'name photo'
-    })
-    next()
-})
+reviewSchema.index({tourRef: 1, author: 1}, {unique: true})
 
 reviewSchema.statics.calcAverageStats = async function(tourId){
     const stat = await this.aggregate([
@@ -55,11 +47,17 @@ reviewSchema.statics.calcAverageStats = async function(tourId){
             }
         }
     ])
-
-   await Tour.findByIdAndUpdate(tourId, {
-        ratingsQuantity: stat[0].nRating,
-        ratingsAverage: stat[0].averageRating
-    })
+    if(stat.length > 0) {
+        await Tour.findByIdAndUpdate(tourId, {
+            ratingsQuantity: stat[0].nRating,
+            ratingsAverage: stat[0].averageRating
+        })
+    } else {
+        await Tour.findByIdAndUpdate(tourId, {
+            ratingsQuantity: 0,
+            ratingsAverage: 0
+        })
+    }
 }
 
 
@@ -68,14 +66,26 @@ reviewSchema.post('save', function(){
 })
 
 reviewSchema.pre(/^findOneAnd/, async function(next){
-    //this.r = await this.findOne()
-    console.log(await this.findOne())
+    this.r = await this.findOne().clone()
     next()
 })
 
-// reviewSchema.post(/^findOneAnd/, async function(){
-//     await this.r.calcAverageStats(this.r.tourRef.id)
-// })
+reviewSchema.post(/^findOneAnd/, async function(){
+    //console.log(this.r.tourRef.id);
+    await this.r.constructor.calcAverageStats(this.r.tourRef)
+})
+
+reviewSchema.pre(/^find/, function(next){
+    this.populate({
+        path: 'tourRef',
+        select: 'name'
+    }).populate({
+        path: 'author',
+        select: 'name photo'
+    })
+    next()
+})
+
 const Review = mongoose.model('Review', reviewSchema)
 
 module.exports = Review
