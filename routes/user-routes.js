@@ -12,7 +12,7 @@ const {
   resetPassword,
   updatePassword,
   protect,
-  restrictTo
+  restrictTo,
 } = authController;
 const {
   getAllUsers,
@@ -22,7 +22,8 @@ const {
   deleteMe,
   updateMyDetails,
   deleteUser,
-  getMe
+  getMe,
+  uploadPhoto,
 } = userControllers;
 
 router.post('/signup', signUp);
@@ -30,14 +31,14 @@ router.post('/login', logIn);
 router.post('/forgot-password', forgotPassword);
 router.patch('/reset-password/:token', resetPassword);
 
-router.use(protect)
-router.patch('/upate-password',  updatePassword);
-router.patch('/upate-details',  updateMyDetails);
-router.delete('/delete-me',  deleteMe);
-router.get('/me',  getMe, getOne)
+router.use(protect);
+router.patch('/upate-password', updatePassword);
+router.patch('/upate-details', uploadPhoto, updateMyDetails);
+router.delete('/delete-me', deleteMe);
+router.get('/me', getMe, getOne);
 
-router.use(restrictTo('admin'))
+router.use(restrictTo('admin'));
 router.route('/').get(getAllUsers);
-router.route('/:id').delete(  deleteUser).get(getUser)
+router.route('/:id').delete(deleteUser).get(getUser);
 
 module.exports = router;
