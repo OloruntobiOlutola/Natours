@@ -24,6 +24,7 @@ const {
   deleteUser,
   getMe,
   uploadPhoto,
+  resizeUserPhoto,
 } = userControllers;
 
 router.post('/signup', signUp);
@@ -33,7 +34,7 @@ router.patch('/reset-password/:token', resetPassword);
 
 router.use(protect);
 router.patch('/upate-password', updatePassword);
-router.patch('/upate-details', uploadPhoto, updateMyDetails);
+router.patch('/upate-details', uploadPhoto, resizeUserPhoto, updateMyDetails);
 router.delete('/delete-me', deleteMe);
 router.get('/me', getMe, getOne);
 

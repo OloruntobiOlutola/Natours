@@ -1,27 +1,30 @@
 const multer = require('multer');
+const sharp = require('sharp');
 const User = require('../models/user-model');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const handlerController = require('./handlerFactory');
 
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/img');
-  },
-  filename: (req, file, cb) => {
-    let id = req.user.id;
-    let timeStamp = Date.now();
-    let ext = file.mimetype.split('/')[1];
-    cb(null, `user-${id}-${timeStamp}.${ext}`);
-  },
-});
+// const multerStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'public/img/users');
+//   },
+//   filename: (req, file, cb) => {
+//     let id = req.user.id;
+//     let timeStamp = Date.now();
+//     let ext = file.mimetype.split('/')[1];
+//     cb(null, `user-${id}-${timeStamp}.${ext}`);
+//   },
+// });
+
+const multerStorage = multer.memoryStorage();
 
 const multerFilter = (req, file, cb) => {
   const fileType = file.mimetype.split('/')[0];
   if (fileType === 'image') {
     cb(null, true);
   } else {
-    cb(new AppError('Please upload the an image file', 400), false);
+    cb(new AppError('Please upload only an image file', 400), false);
   }
 };
 
@@ -31,6 +34,22 @@ const upload = multer({
 });
 
 exports.uploadPhoto = upload.single('photo');
+
+exports.resizeUserPhoto = (req, res, next) => {
+  if (!req.file) return next();
+  let id = req.user.id;
+  let timeStamp = Date.now();
+  req.file.filename = `user-${id}-${timeStamp}.jpeg`;
+  sharp(req.file.buffer)
+    .resize(500, 500, {
+      fit: 'contain',
+    })
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/users/${req.file.filename}`);
+
+  next();
+};
 
 exports.getAllUsers = handlerController.getAll(User);
 
@@ -54,6 +73,9 @@ exports.updateMyDetails = catchAsync(async (req, res, next) => {
 
   const { email, name } = req.body;
   const update = { email, name };
+  if (req.file) {
+    update.photo = req.file.filename;
+  }
   const updatedUser = await User.findByIdAndUpdate(req.user._id, update, {
     new: true,
     runValidators: true,

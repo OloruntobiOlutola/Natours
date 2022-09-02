@@ -20,7 +20,10 @@ const userSchema = new mongoose.Schema(
       lowerCase: true,
       unique: true,
     },
-    photo: String,
+    photo: {
+      type: String,
+      default: 'default.jpg',
+    },
     password: {
       type: String,
       required: [true, 'A password is required for all users'],
@@ -52,7 +55,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       select: false,
-    }
+    },
   },
   {
     toJSON: { virtuals: true },
