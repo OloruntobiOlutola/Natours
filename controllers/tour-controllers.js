@@ -1,8 +1,64 @@
+const multer = require('multer');
+const sharp = require('sharp');
 const APIFeatures = require('../utils/apiFeatures');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/AppError');
 const Tour = require('./../models/tour-model');
-const handlerController = require('./handlerFactory')
+const handlerController = require('./handlerFactory');
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Please upload only an image file', 400), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+exports.uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  let id = req.params.id;
+  let timeStamp = Date.now();
+  req.body.imageCover = `tour-${id}-${timeStamp}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333, {
+      fit: 'contain',
+    })
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/tours/${req.body.imageCover}`);
+
+  req.body.images = [];
+
+  await Promise.all(
+    req.files.images.map(async (file, index) => {
+      const filename = `tour-${id}-${timeStamp}-${index + 1}.jpeg`;
+
+      await sharp(file.buffer)
+        .resize(2000, 1333, {
+          fit: 'contain',
+        })
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`public/img/tours/${filename}`);
+
+      req.body.images.push(filename);
+    })
+  );
+  next();
+});
 
 exports.aliasing = (req, res, next) => {
   req.query.limit = '5';
@@ -11,14 +67,16 @@ exports.aliasing = (req, res, next) => {
   next();
 };
 
-exports.getAllTour = handlerController.getAll(Tour)
+exports.getAllTour = handlerController.getAll(Tour);
 exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id).populate({
-    path: 'guides',
-    select: '-__v -passwordChangedAt -roles'
-  }).populate('reviews')
+  const tour = await Tour.findById(req.params.id)
+    .populate({
+      path: 'guides',
+      select: '-__v -passwordChangedAt -roles',
+    })
+    .populate('reviews');
 
-  if (!tour) 
+  if (!tour)
     return next(
       new AppError(`Tour with the id ${req.params.id} not found`, 404)
     );
@@ -30,11 +88,11 @@ exports.getTour = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.createTour = handlerController.createOne(Tour)
+exports.createTour = handlerController.createOne(Tour);
 
-exports.updateTour = handlerController.updateOne(Tour)
+exports.updateTour = handlerController.updateOne(Tour);
 
-exports.deleteTour = handlerController.deleteOne(Tour)
+exports.deleteTour = handlerController.deleteOne(Tour);
 
 exports.getToursStats = catchAsync(async (req, res, next) => {
   const stats = await Tour.aggregate([
@@ -119,20 +177,24 @@ exports.getTourByMonth = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getTourWithin = catchAsync(async(req, res, next) => {
-  const {distance, latlng, unit} = req.params
-  const [lat, lng] = latlng.split(',')
+exports.getTourWithin = catchAsync(async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
 
-  if (!lat || !lng){
-    return next(new AppError('Provide latitude and longitude in the format lat,lng'))
+  if (!lat || !lng) {
+    return next(
+      new AppError('Provide latitude and longitude in the format lat,lng')
+    );
   }
 
-  const radius = unit === "km" ? distance / 6731 : distance / 3958.8
-  const tours = await Tour.find({startLocation : {$geoWithin: {$centerSphere: [[lng, lat], radius]}}})
+  const radius = unit === 'km' ? distance / 6731 : distance / 3958.8;
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+  });
   console.log(distance, lat, lng, unit);
   res.status(200).json({
     status: 'success',
     result: tours.length,
-    tours
-  })
-})
+    tours,
+  });
+});

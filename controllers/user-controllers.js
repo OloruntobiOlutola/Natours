@@ -5,18 +5,6 @@ const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const handlerController = require('./handlerFactory');
 
-// const multerStorage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'public/img/users');
-//   },
-//   filename: (req, file, cb) => {
-//     let id = req.user.id;
-//     let timeStamp = Date.now();
-//     let ext = file.mimetype.split('/')[1];
-//     cb(null, `user-${id}-${timeStamp}.${ext}`);
-//   },
-// });
-
 const multerStorage = multer.memoryStorage();
 
 const multerFilter = (req, file, cb) => {
@@ -35,12 +23,12 @@ const upload = multer({
 
 exports.uploadPhoto = upload.single('photo');
 
-exports.resizeUserPhoto = (req, res, next) => {
+exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
   if (!req.file) return next();
   let id = req.user.id;
   let timeStamp = Date.now();
   req.file.filename = `user-${id}-${timeStamp}.jpeg`;
-  sharp(req.file.buffer)
+  await sharp(req.file.buffer)
     .resize(500, 500, {
       fit: 'contain',
     })
@@ -49,7 +37,7 @@ exports.resizeUserPhoto = (req, res, next) => {
     .toFile(`public/img/users/${req.file.filename}`);
 
   next();
-};
+});
 
 exports.getAllUsers = handlerController.getAll(User);
 
